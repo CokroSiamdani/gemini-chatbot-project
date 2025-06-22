@@ -10,39 +10,41 @@ const chatBox = document.getElementById('chat-box')
  * - Unordered lists: Lines starting with *
  * - Paragraphs for other lines.
  * @param {string} text The plain text from the bot.
- * @returns {string} The formatted HTML string.
+ * @returns {string} The formatted HTML.
  */
 function formatBotResponse(text) {
-  // First, handle bolding across the entire text
-  const processedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-  const lines = processedText.split('\n')
+  const lines = text.split('\n')
   let htmlResult = ''
   let inList = false
+  let paragraphBuffer = ''
+  function applyInlineFormatting(line) {
+    return line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+  }
+  function flushParagraph() {
+    if (paragraphBuffer) {
+      htmlResult += `<p>${paragraphBuffer}</p>`
+      paragraphBuffer = ''
+    }
+  }
   for (const line of lines) {
     const trimmedLine = line.trim()
     if (trimmedLine.startsWith('* ')) {
+      flushParagraph() // End any existing paragraph
       if (!inList) {
         htmlResult += '<ul>'
         inList = true
       }
-      // Add list item, content is after '* '
-      htmlResult += `<li>${trimmedLine.substring(2)}</li>`
+      htmlResult += `<li>${applyInlineFormatting(trimmedLine.substring(2))}</li>`
     } else {
-      // If we were in a list, close it
       if (inList) {
         htmlResult += '</ul>'
         inList = false
       }
-      // Wrap non-empty lines that are not lists in paragraph tags
-      if (trimmedLine) {
-        htmlResult += `<p>${line}</p>`
-      }
+      paragraphBuffer += (paragraphBuffer ? '\n' : '') + applyInlineFormatting(line)
     }
   }
-  // Ensure any open list is closed at the end
-  if (inList) {
-    htmlResult += '</ul>'
-  }
+  if (inList) htmlResult += '</ul>' // Close list if file ends with it
+  flushParagraph() // Flush any remaining paragraph content
   return htmlResult
 }
 
